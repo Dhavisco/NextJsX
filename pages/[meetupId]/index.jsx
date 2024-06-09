@@ -1,53 +1,64 @@
-import MeetupDetail from "../../components/meetups/MeetupDetail"
+import { MongoClient, ObjectId } from "mongodb";
+import MeetupDetail from "../../components/meetups/MeetupDetail";
 
-export default function MeetupDetails(){
-
-    return (
-      <>
-        <MeetupDetail
-          image="https://th.bing.com/th/id/R.171469519d57e63bf0cb18c3257797e3?rik=Rs1FirAHPKiyXA&riu=http%3a%2f%2fwww.baltana.com%2ffiles%2fwallpapers-2%2fFruit-HD-Wallpapers-03484.jpg&ehk=7L0lkg9TPcRVu%2bjsZhWvhNw1CZRgILylaYrEFKMa6n4%3d&risl=&pid=ImgRaw&r=0"
-          title="A first Meetup"
-          address="Some Street 5, Some City"
-          description="The meetup description"
-        />
-        </>
-    );
+export default function MeetupDetails(props) {
+  return (
+    <>
+      <MeetupDetail
+        image={props.meetupData.image}
+        title={props.meetupData.title}
+        address={props.meetupData.address}
+        description={props.meetupData.description}
+      />
+    </>
+  );
 }
 
-
 export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    "mongodb+srv://olaniyidavid2002:davisco32@cluster0.ype1yze.mongodb.net/meetups?retryWrites=true&w=majority&appName=Cluster0"
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection("meetups");
+
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray();
+
+  client.close();
+
   return {
     fallback: false,
-    paths: [
-      {
-        params: {
-          meetupId: "m1",
-        },
-      },
-      {
-        params: {
-          meetupId: "m2",
-        },
-      },
-    ],
+    paths: meetups.map((meetup) => ({
+      params: { meetupId: meetup._id.toString() },
+    })),
   };
 }
 
-export async function getStaticProps(context){
-
+export async function getStaticProps(context) {
   const meetupId = context.params.meetupId;
 
-  console.log(meetupId);
-  //fetch data for a single meetup
-  return{
+ 
+    const client = await MongoClient.connect(
+      "mongodb+srv://olaniyidavid2002:davisco32@cluster0.ype1yze.mongodb.net/meetups?retryWrites=true&w=majority&appName=Cluster0"
+    );
+    const db = client.db();
+    const meetupsCollection = db.collection("meetups");
+
+   const selectedMeetup = await meetupsCollection.findOne({
+      _id: new ObjectId(meetupId),
+    });
+
+    client.close();
+
+
+  return {
     props: {
       meetupData: {
-         image: "https://th.bing.com/th/id/R.171469519d57e63bf0cb18c3257797e3?rik=Rs1FirAHPKiyXA&riu=http%3a%2f%2fwww.baltana.com%2ffiles%2fwallpapers-2%2fFruit-HD-Wallpapers-03484.jpg&ehk=7L0lkg9TPcRVu%2bjsZhWvhNw1CZRgILylaYrEFKMa6n4%3d&risl=&pid=ImgRaw&r=0",
-          id: meetupId,
-         title: "A first Meetup",
-          address: "Some Street 5, Some City",
-          description:"The meetup description",
-      }
-    }
-  }
+        id: selectedMeetup._id.toString(),
+        title: selectedMeetup.data.title,
+        address: selectedMeetup.data.address,
+        description: selectedMeetup.data.description,
+        image: selectedMeetup.data.image,
+      },
+    },
+  };
 }
